@@ -249,13 +249,27 @@
  * the E3D Tool Changer. Toolheads are locked with a servo.
  */
 //#define SWITCHING_TOOLHEAD
-#if ENABLED(SWITCHING_TOOLHEAD)
-  #define SWITCHING_TOOLHEAD_SERVO_NR       2         // Index of the servo connector
-  #define SWITCHING_TOOLHEAD_SERVO_ANGLES { 0, 180 }  // (degrees) Angles for Lock, Unlock
-  #define SWITCHING_TOOLHEAD_Y_POS        235         // (mm) Y position of the toolhead dock
-  #define SWITCHING_TOOLHEAD_Y_SECURITY    10         // (mm) Security distance Y axis
-  #define SWITCHING_TOOLHEAD_Y_CLEAR       60         // (mm) Minimum distance from dock for unobstructed X axis
-  #define SWITCHING_TOOLHEAD_X_POS        { 215, 0 }  // (mm) X positions for parking the extruders
+
+/**
+ * Magnetic Switching Toolhead
+ *
+ * Support swappable and dockable toolheads with a magnetic
+ * docking mechanism using movement and no servo.
+ */
+//#define MAGNETIC_SWITCHING_TOOLHEAD
+
+#if EITHER(SWITCHING_TOOLHEAD, MAGNETIC_SWITCHING_TOOLHEAD)
+  #define SWITCHING_TOOLHEAD_Y_POS          235         // (mm) Y position of the toolhead dock
+  #define SWITCHING_TOOLHEAD_Y_SECURITY      10         // (mm) Security distance Y axis
+  #define SWITCHING_TOOLHEAD_Y_CLEAR         60         // (mm) Minimum distance from dock for unobstructed X axis
+  #define SWITCHING_TOOLHEAD_X_POS          { 215, 0 }  // (mm) X positions for parking the extruders
+  #if ENABLED(SWITCHING_TOOLHEAD)
+    #define SWITCHING_TOOLHEAD_SERVO_NR       2         // Index of the servo connector
+    #define SWITCHING_TOOLHEAD_SERVO_ANGLES { 0, 180 }  // (degrees) Angles for Lock, Unlock
+  #elif ENABLED(MAGNETIC_SWITCHING_TOOLHEAD)
+    #define SWITCHING_TOOLHEAD_Y_RELEASE      5         // (mm) Security distance Y axis
+    #define SWITCHING_TOOLHEAD_X_SECURITY   -35         // (mm) Security distance X axis
+  #endif
 #endif
 
 /**
@@ -377,7 +391,6 @@
 #define TEMP_SENSOR_5 0
 #define TEMP_SENSOR_BED 1
 #define TEMP_SENSOR_CHAMBER 0
-#define CHAMBER_HEATER_PIN -1  // On/off pin for enclosure heating system
 
 // Dummy thermistor constant temperature readings, for use with 998 and 999
 #define DUMMY_THERMISTOR_998_VALUE 25
@@ -396,8 +409,6 @@
 #define TEMP_BED_WINDOW          1  // (°C) Temperature proximity for the "temperature reached" timer
 #define TEMP_BED_HYSTERESIS      3  // (°C) Temperature proximity considered "close enough" to the target
 
-#define TEMP_CHAMBER_HYSTERESIS  3  // (°C) Temperature proximity considered "close enough" to the target
-
 // Below this temperature the heater will be switched off
 // because it probably indicates a broken thermistor wire.
 #define HEATER_0_MINTEMP   5
@@ -407,7 +418,6 @@
 #define HEATER_4_MINTEMP   5
 #define HEATER_5_MINTEMP   5
 #define BED_MINTEMP        5
-#define CHAMBER_MINTEMP    5
 
 // Above this temperature the heater will be switched off.
 // This can protect components from overheating, but NOT from shorts and failures.
@@ -419,7 +429,6 @@
 #define HEATER_4_MAXTEMP 275
 #define HEATER_5_MAXTEMP 275
 #define BED_MAXTEMP      125
-#define CHAMBER_MAXTEMP  100
 
 //===========================================================================
 //============================= PID Settings ================================
@@ -466,7 +475,7 @@
 #endif // PIDTEMP
 
 //===========================================================================
-//============================= PID > Bed Temperature Control ===============
+//====================== PID > Bed Temperature Control ======================
 //===========================================================================
 
 /**
@@ -922,6 +931,9 @@
 
 // Before deploy/stow pause for user confirmation
 //#define PAUSE_BEFORE_DEPLOY_STOW
+#if ENABLED(PAUSE_BEFORE_DEPLOY_STOW)
+  //#define PAUSE_PROBE_DEPLOY_WHEN_TRIGGERED // For Manual Deploy Allenkey Probe
+#endif
 
 /**
  * Enable one or more of the following if probing seems unreliable.
@@ -966,6 +978,7 @@
 #define INVERT_Y_DIR true
 #define INVERT_Z_DIR true
 
+
 // @section extruder
 
 // For direct drive extruder v9 set to true, for geared extruder set to false.
@@ -987,15 +1000,15 @@
 
 // Direction of endstops when homing; 1=MAX, -1=MIN
 // :[-1,1]
-#define X_HOME_DIR 1
-#define Y_HOME_DIR 1
+#define X_HOME_DIR  1
+#define Y_HOME_DIR  1
 #define Z_HOME_DIR -1
 
 // @section machine
 
 // The size of the print bed
-#define X_BED_SIZE 235
-#define Y_BED_SIZE 235
+#define X_BED_SIZE 225
+#define Y_BED_SIZE 225
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
 #define X_MIN_POS 0
@@ -1394,13 +1407,13 @@
 
 // Preheat Constants
 #define PREHEAT_1_LABEL       "PLA"
-#define PREHEAT_1_TEMP_HOTEND 200
-#define PREHEAT_1_TEMP_BED     60
+#define PREHEAT_1_TEMP_HOTEND 185
+#define PREHEAT_1_TEMP_BED     45
 #define PREHEAT_1_FAN_SPEED   255 // Value from 0 to 255
 
 #define PREHEAT_2_LABEL       "ABS"
 #define PREHEAT_2_TEMP_HOTEND 240
-#define PREHEAT_2_TEMP_BED    100
+#define PREHEAT_2_TEMP_BED      0
 #define PREHEAT_2_FAN_SPEED   255 // Value from 0 to 255
 
 /**
@@ -1408,7 +1421,7 @@
  *
  * Park the nozzle at the given XYZ position on idle or G27.
  *
- * The "P" parameter controls the action applied to the Z axis:
+* The "P" parameter controls the action applied to the Z axis:
  *
  *    P0  (Default) If Z is below park Z raise the nozzle.
  *    P1  Raise the nozzle always to Z-park height.
@@ -1644,7 +1657,7 @@
 //
 // Add individual axis homing items (Home X, Home Y, and Home Z) to the LCD menu.
 //
-//#define INDIVIDUAL_AXIS_HOMING_MENU
+#define INDIVIDUAL_AXIS_HOMING_MENU
 
 //
 // SPEAKER/BUZZER
@@ -2005,6 +2018,7 @@
 // affecting heaters, and the fan if FAN_SOFT_PWM is enabled.
 // However, control resolution will be halved for each increment;
 // at zero value, there are 128 effective control positions.
+// :[0,1,2,3,4,5,6,7]
 #define SOFT_PWM_SCALE 0
 
 // If SOFT_PWM_SCALE is set to a value higher than 0, dithering can
